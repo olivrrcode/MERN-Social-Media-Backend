@@ -11,8 +11,6 @@ import { fileURLToPath } from 'url';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import postRoutes from './routes/posts.js';
-import s3 from './middleware/aws.js';
-import multerS3 from 'multer-s3';
 import { register } from './controllers/auth.js';
 import { createPost } from './controllers/posts.js';
 import { verifyToken } from './middleware/auth.js';
@@ -32,19 +30,15 @@ app.use(cors());
 app.use('/assets', express.static(path.join(__dirname, 'public/assets')));
 
 /* FILE STORAGE */
-const upload = multer({
-  storage: multerS3({
-    s3: s3,
-    bucket: 'mern-social-media',
-    acl: 'public-read',
-    metadata: function (req, picture, cb) {
-      cb(null, { fieldName: picture.fieldname });
-    },
-    key: function (req, file, cb) {
-      cb(null, Date.now().toString() + '-' + file.originalname); // Unique file name
-    },
-  }),
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'public/assets');
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname);
+  },
 });
+const upload = multer({ storage });
 
 /* ROUTES WITH FILES */
 app.post('/auth/register', upload.single('picture'), register);
